@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String?
+  password     String
+  account      Account       @default(FREE)
+  createdAt    DateTime      @default(now())
+  ownedBoards  Board[]
+  sharedBoards BoardMember[]
+}
+
+model Board {
+  id       String        @id @default(uuid())
+  owner_id String
+  User     User          @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  title    String
+  lists    List[]
+  members  BoardMember[]
+}
+
+enum Permission {
+  READ_ONLY
+  READ_WRITE
+}
+
+model BoardMember {
+  id         String     @id @default(uuid())
+  permission Permission @default(READ_ONLY)
+  User       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String?
+  Board      Board?     @relation(fields: [boardId], references: [id])
+  boardId    String?
+
+  @@unique([userId, boardId])
+}
+
+model List {
+  id      String @id @default(uuid())
+  title   String
+  Board   Board? @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId String
+  cards   Card[]
+}
+
+model Card {
+  id          String        @id @default(uuid())
+  List        List?         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  description String
+  listId      String
+  title       String
+  attachments Attachments[]
+  dueDate     DateTime?
+  order       Int           @default(0)
+}
+
+model Attachments {
+  id        String   @id @default(uuid())
+  fileName  String
+  fileKey   String   @unique
+  fileType  String
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+enum Account {
+  FREE
+  PREMIUM
+}
